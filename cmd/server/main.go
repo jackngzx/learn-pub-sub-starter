@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -30,17 +31,17 @@ func main() {
 	qName := "game_logs"
 	routingKey := routing.GameLogSlug + ".*"
 
-	_, _, err = pubsub.DeclareAndBind(conn, routing.ExchangePerilTopic, qName, routingKey, pubsub.SimpleQueueType(pubsub.Durable))
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
 	err = pubsub.PublishJSON(ch, routing.ExchangePerilDirect, routing.PauseKey, routing.PlayingState{
 		IsPaused: true,
 	})
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
+		return
+	}
+
+	err = pubsub.SubscribeGob(conn, routing.ExchangePerilTopic, qName, routingKey, pubsub.Durable, handlerLogs())
+	if err != nil {
+		log.Fatal(err)
 		return
 	}
 	gamelogic.PrintServerHelp()

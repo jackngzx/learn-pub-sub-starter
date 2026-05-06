@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/gamelogic"
 	"github.com/bootdotdev/learn-pub-sub-starter/internal/pubsub"
@@ -55,7 +56,7 @@ func main() {
 
 	// war
 	warkey := routing.WarRecognitionsPrefix + "." + usrName
-	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, "war", warkey, pubsub.Durable, handlerWarConsume(gS))
+	err = pubsub.SubscribeJSON(conn, routing.ExchangePerilTopic, "war", warkey, pubsub.Durable, handlerWarConsume(gS, ch))
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -91,7 +92,22 @@ Loop:
 		case "help":
 			gamelogic.PrintClientHelp()
 		case "spam":
-			fmt.Println("Spamming not allowed yet!")
+			if len(words) == 1 {
+				fmt.Println("second word needed")
+				continue
+			}
+			i, err := strconv.Atoi(words[1])
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			for range i {
+				msg := gamelogic.GetMaliciousLog()
+				err = pubsub.PublishGob(ch, routing.ExchangePerilTopic, routing.GameLogSlug+"."+gS.Player.Username, msg)
+				if err != nil {
+					fmt.Println(err)
+				}
+			}
 		case "quit":
 			gamelogic.PrintQuit()
 			os.Exit(1)
